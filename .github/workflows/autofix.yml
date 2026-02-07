@@ -1,0 +1,38 @@
+name: Autofix Bugs and Errors
+
+on:
+  schedule:
+    - cron: "0 0 */2 * *"
+    - cron: "0 12 */2 * *"
+  workflow_dispatch:
+
+jobs:
+  scan-and-fix:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Scan for errors
+        id: scan
+        run: npm run lint
+
+      - name: Attempt to autofix
+        if: failure()
+        run: npm run lint:fix
+
+      - name: Commit changes
+        if: failure()
+        uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: "chore: Autofix linting errors"
+          branch: main
+          file_pattern: "**/*.{js,ts,jsx,tsx}"
